@@ -10,12 +10,19 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 class FirstController extends AbstractController
 {
+    #[Route('/template', name: 'template')]
+    public function template()
+    {
+        return $this->render(view: "template.html.twig");
+    }
 
     #[Route('/order/{mavar}', name: 'test.order.route')]
     public function testOrderRoute($mavar)
     {
         return new Response("<html><body>$mavar</html></body>");
     }
+
+
 
     #[Route('/first', name: 'first')]
     public function index(): Response
@@ -26,11 +33,16 @@ class FirstController extends AbstractController
         ]);
     }
 
-    #[Route('/hello/{name}/{firstname}', name: 'say.hello')]
+    // #[Route('/hello/{name}/{firstname}', name: 'say.hello')]
     public function sayHello(Request $request, $name, $firstname): Response
     {
         
-        return $this->render('first/hello.html.twig',['nom'=>$name, 'prenom'=>$firstname]);
+        return $this->render('first/hello.html.twig',[
+            'nom'=>$name, 
+            'prenom'=>$firstname,
+            'path' => '   '
+        
+        ]);
     }
 
     #[route('multi/{entier1}/{entier2}', name: 'multiplication', requirements: ['entier1'=>'\d+', 'entier2'=>'\d+'])]
