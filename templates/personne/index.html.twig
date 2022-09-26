@@ -1,0 +1,56 @@
+{% extends "template.html.twig" %}
+
+{% block title %}Liste des personnes{% endblock %}
+
+{% block pageTitle %}Liste des personnes dans ma base de données {% endblock %}
+ 
+{% block body %}
+    <div class="row">
+        {% for personne in personnes %}
+            <div class="card" style="...">
+                <div class="card-body">
+                    <h5 class="card-title">{{personne.name}}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{personne.firstname}} {{personne.name}}</h6>
+                    <p class="card-text">age: {{personne.age}}</p>
+                    <a href="{{ path('personne.detail', {id: personne.id}) }}">Détails</a>
+                    <a href="{{ path('personne.delete', {id: personne.id}) }}">Delete</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    {% if isPaginated is defined and isPaginated %}
+    <div class="row mt-3">
+        <nav aria-label="col Page navigation example">
+            <ul class="pagination">
+                {% if page != 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ path ('personne.list.all', {page: page - 1, nbre: nbre})}}">
+                            Previous
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for i in range(1, nbrepage) %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ path ('personne.list.all', {page: page, nbre: nbre})}}">
+                            {{ i}}
+                        </a>
+                    </li>  
+                {% endfor %}
+
+                
+                {% if page != nbrepage %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ path ('personne.list.all', {page: page + 1, nbre: nbre})}}">
+                            Next
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    
+    {% endif %}
+
+
+{% endblock %}
