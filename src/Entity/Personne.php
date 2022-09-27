@@ -9,6 +9,8 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
+use Symfony\Component\Validator\Constraints as Assert;
+
 #[ORM\Entity(repositoryClass: PersonneRepository::class)]
 #[ORM\HasLifecycleCallbacks]
 class Personne
@@ -21,6 +23,13 @@ class Personne
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
+    #[Assert\NotBlank]
+    #[Assert\Length(
+        min: 4,
+        max: 50,
+        minMessage: 'Le mot doit faire au minimum 4 caractère',
+        maxMessage: 'le mot ne doit pas dépasser 50 caractère'
+    )]
     private ?string $firstname = null;
 
     #[ORM\Column(length: 50)]
@@ -37,6 +46,9 @@ class Personne
 
     #[ORM\ManyToOne(inversedBy: 'personnes')]
     private ?Job $job = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $image = null;
 
     // #[ORM\Column(nullable: true)]
     // private ?\DateTimeImmutable $createdAt = null;
@@ -175,4 +187,16 @@ class Personne
     // {
     //     $this->updateAt = new \DateTime();
     // }
+
+    public function getImage(): ?string
+    {
+        return $this->image;
+    }
+
+    public function setImage(?string $image): self
+    {
+        $this->image = $image;
+
+        return $this;
+    }
 }

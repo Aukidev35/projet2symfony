@@ -12,8 +12,15 @@
                     <h5 class="card-title">{{personne.name}}</h5>
                     <h6 class="card-subtitle mb-2 text-muted">{{personne.firstname}} {{personne.name}}</h6>
                     <p class="card-text">age: {{personne.age}}</p>
-                    <a href="{{ path('personne.detail', {id: personne.id}) }}">Détails</a>
-                    <a href="{{ path('personne.delete', {id: personne.id}) }}">Delete</a>
+                    <a href="{{ path('personne.detail', {id: personne.id}) }}">
+                        <i class="fa-solid fa-circle-info"></i>
+                    </a>
+                    <a href="{{ path('personne.delete', {id: personne.id}) }}">
+                        <i class="fa-solid fa-user-xmark"></i>
+                    </a>
+                    <a href="{{ path('personne.edit', {id: personne.id}) }}">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </a>
                 </div>
             </div>
         {% endfor %}
@@ -54,3 +61,4 @@
 
 
 {% endblock %}
+

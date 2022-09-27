@@ -6,10 +6,13 @@ use App\Entity\Personne;
 use App\Form\PersonneType;
 use App\Repository\PersonneRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\Exception\FileException;
 
 #[Route('personne')]
 class PersonneController extends AbstractController
@@ -70,16 +73,73 @@ class PersonneController extends AbstractController
         return $this->render('personne/detail.html.twig', ['personne' => $personne]);
     }
 
-    #[Route('/add', name: 'personne.add')]
-    public function addPersonne(ManagerRegistry $doctrine): Response
+    #[Route('/edit/{id?0}', name: 'personne.edit')]
+    public function addPersonne(Personne $personne = null, ManagerRegistry $doctrine, Request $request, SluggerInterface $slugger): Response
     {
-        $entityManager = $doctrine->getManager();
-        $personne = new Personne();
+        $new = false;
+        if (!$personne) 
+        {
+            $new = true;
+            $personne = new Personne();
+        }
+
         $form = $this->createForm(PersonneType::class, $personne );
- 
-        return $this->render('personne/add-personne.html.twig', [
-            'form'=> $form->createView()
-        ]);
+        $form->remove('createdAt');
+        $form->remove('updateAt');
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) 
+        {
+            $photo = $form->get('photo')->getData();
+
+            // this condition is needed because the 'brochure' field is not required
+            // so the PDF file must be processed only when a file is uploaded
+            if ($photo) {
+                $originalFilename = pathinfo($photo->getClientOriginalName(), PATHINFO_FILENAME);
+                // this is needed to safely include the file name as part of the URL
+                $safeFilename = $slugger->slug($originalFilename);
+                $newFilename = $safeFilename.'-'.uniqid().'.'.$photo->guessExtension();
+
+                // Move the file to the directory where brochures are stored
+                try {
+                    $photo->move(
+                        $this->getParameter('personne_directory'),
+                        $newFilename
+                    );
+                } catch (FileException $e) {
+                    // ... handle exception if something happens during file upload
+                }
+
+                // updates the 'brochureFilename' property to store the PDF file name
+                // instead of its contents
+                $personne->setImage($newFilename);
+            }
+
+            $manager = $doctrine->getManager();
+            $manager->persist($personne);
+
+            $manager->flush(); 
+            if ($new) 
+            {
+                $message = "la personne est ajouté avec succés";
+            } 
+            else 
+            {
+                $message = "la personne est modifié avec succés";
+            } 
+        
+            
+           $this->addFlash('success', $message);
+            return $this->redirectToRoute('personne.list');
+        }
+        else
+        {
+            return $this->render('personne/add-personne.html.twig', [
+                'form'=> $form->createView()]);
+        }
+
+        
     }
 
     #[Route('/delete/{id}', name: 'personne.delete')]
