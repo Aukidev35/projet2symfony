@@ -12,6 +12,7 @@ use App\Service\MaillerService;
 use App\Repository\PersonneRepository;
 use App\Service\PDFServices;
 use Doctrine\Persistence\ManagerRegistry;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -21,7 +22,10 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 // use Symfony\Component\HttpFoundation\File\UploadedFile;
 
-#[Route('personne')]
+#[
+    Route('personne'),
+    IsGranted('ROLE_USER')
+]
 class PersonneController extends AbstractController
 {
 
@@ -63,7 +67,10 @@ class PersonneController extends AbstractController
         ]);
     }
 
-    #[Route('/alls/{page?1}/{nbre?15}', name: 'personne.list.all')]
+    #[
+        Route('/alls/{page?1}/{nbre?15}', name: 'personne.list.all'),
+        IsGranted("ROLE_USER")
+    ]
     public function indexAlls(ManagerRegistry $doctrine, $page, $nbre, Helpers $helpers): Response
     {
 
@@ -101,6 +108,7 @@ class PersonneController extends AbstractController
          MaillerService $mailer ): Response
          
     {
+        
         $new = false;
         if (!$personne) 
         {
@@ -125,19 +133,21 @@ class PersonneController extends AbstractController
                 $personne->setImage($uploadedFile->uploadFile($photo, $dierctory));
             }
 
-            $manager = $doctrine->getManager();
-            $manager->persist($personne);
-
-            $manager->flush(); 
             if ($new) 
             {
-                $message = "la personne est ajouté avec succés";
-                            
+                $message = "la personne est ajouté avec succés";   
+                $personne->setCreatedBy($this->getUser());                     
             } 
             else 
             {
                 $message = "la personne est modifié avec succés";
             } 
+
+            $manager = $doctrine->getManager();
+            $manager->persist($personne);
+
+            $manager->flush(); 
+
             $mailMessage = $personne->getFirstname().' '.$personne->getName().' '.$message;
             
            $this->addFlash('success', $message);
@@ -154,6 +164,7 @@ class PersonneController extends AbstractController
     }
 
     #[Route('/delete/{id}', name: 'personne.delete')]
+    #[IsGranted('ROLE_ADMIN')]
     public function deletePersonne(Personne $personne = null, ManagerRegistry $doctrine): RedirectResponse
     {
         if ($personne) {

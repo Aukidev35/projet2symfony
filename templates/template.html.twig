@@ -35,15 +35,23 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-user fa-fw"></i></a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="#!">Settings</a></li>
-                        <li><a class="dropdown-item" href="#!">Activity Log</a></li>
-                        <li><hr class="dropdown-divider" /></li>
-                        <li><a class="dropdown-item" href="#!">Logout</a></li>
+                        {% if is_granted('IS_AUTHENTICATED_FULLY') %}
+                            {# <li><hr class="dropdown-divider" /></li> #}
+                            <li><a class="dropdown-item" href="{{path('app_logout')}}">Logout</a></li>
+                        {% else %}
+                            <li><a class="dropdown-item" href="{{path('app_login')}}">Login</a></li>
+                            <li><a class="dropdown-item" href="{{path('app_register')}}">enregistrement</a></li>                        
+                        {% endif %}
+                    
+
+                        
                     </ul>
                 </li>
             </ul>
         </nav>
+        
         <div id="layoutSidenav">
+            {% if is_granted('IS_AUTHENTICATED_FULLY') %}
             <div id="layoutSidenav_nav">
                 <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
                     <div class="sb-sidenav-menu">
@@ -75,9 +83,11 @@
                                     <a class="nav-link collapsed" href="{{ path('personne.list.all')}}">
                                         Liste des personnes
                                     </a>
+                                    {% if is_granted('ROLE_ADMIN') %}                                   
                                     <a class="nav-link collapsed" href="{{ path('personne.edit')}}">
                                         Ajouter une personne
                                     </a>
+                                    {% endif %}
                                 </nav>
                             </div>
                             {# <div class="sb-sidenav-menu-heading">Addons</div>
@@ -88,15 +98,22 @@
                             <a class="nav-link" href="tables.html">
                                 <div class="sb-nav-link-icon"><i class="fas fa-table"></i></div>
                                 Tables
-                            </a>
-                        </div> #}
+                            </a>#}
+                        </div> 
                     </div>
-                    {# <div class="sb-sidenav-footer">
-                        <div class="small">Logged in as:</div>
-                        Start Bootstrap
-                    </div> #}
+
+                    <div class="sb-sidenav-footer">
+                        <div class="small">La personne:</div>
+                        {% if app.user %}                    
+                            {{app.user.email}}                          
+                        {% else %}
+                            anonymous
+                        {% endif %}
+                    </div>
                 </nav>
             </div>
+            {% endif %}
+
             <div id="layoutSidenav_content">
                 <main>
                     <div class="container-fluid px-4">
@@ -144,6 +161,7 @@
                     </div>
                 </footer>
             </div>
+        
         </div>
 {% block javascripts %}
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
