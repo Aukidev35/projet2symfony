@@ -2,9 +2,15 @@
 
 namespace App\Controller;
 
+use Monolog\Logger;
 use App\Entity\Personne;
+use App\Service\Helpers;
 use App\Form\PersonneType;
+use Psr\Log\LoggerInterface;
+use App\Service\UploadService;
+use App\Service\MaillerService;
 use App\Repository\PersonneRepository;
+use App\Service\PDFServices;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -13,16 +19,28 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
+// use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 #[Route('personne')]
 class PersonneController extends AbstractController
 {
+
+    public function __construct(private LoggerInterface $logger)
+    {
+    }
+
     #[Route('/', name: 'personne.list')]
     public function index(ManagerRegistry $doctrine): Response
     {
         $repository = $doctrine->getRepository(Personne::class);
         $personnes = $repository->findAll();
         return $this->render('personne/index.html.twig', ['personnes' => $personnes]);
+    }
+
+    #[Route('/pdf/{id}', name: 'personne.pdf')]
+    public function generatePdfPersonne(Personne $personne = null, PDFServices $pdf) {
+        $html = $this->render('personne/detail.html.twig', ['personne' => $personne]);
+        $pdf->showPdfFile($html);
     }
 
     #[Route('/alls/age/{ageMin}/{ageMax}', name: 'personne.list.age')]
@@ -46,8 +64,9 @@ class PersonneController extends AbstractController
     }
 
     #[Route('/alls/{page?1}/{nbre?15}', name: 'personne.list.all')]
-    public function indexAlls(ManagerRegistry $doctrine, $page, $nbre): Response
+    public function indexAlls(ManagerRegistry $doctrine, $page, $nbre, Helpers $helpers): Response
     {
+
         $repository = $doctrine->getRepository(Personne::class);
         $nbPersonne = $repository->count([]);
         $nbpage = ceil($nbPersonne / $nbre);
@@ -69,12 +88,18 @@ class PersonneController extends AbstractController
         if (!$personne) {
             $this->addFlash('error', 'la personne nesxiste pas');
             return $this->redirectToRoute('personne.list');
-        };
+        };       
         return $this->render('personne/detail.html.twig', ['personne' => $personne]);
     }
 
     #[Route('/edit/{id?0}', name: 'personne.edit')]
-    public function addPersonne(Personne $personne = null, ManagerRegistry $doctrine, Request $request, SluggerInterface $slugger): Response
+    public function addPersonne(
+        Personne $personne = null,
+         ManagerRegistry $doctrine, 
+         Request $request,
+         UploadService $uploadedFile,
+         MaillerService $mailer ): Response
+         
     {
         $new = false;
         if (!$personne) 
@@ -96,24 +121,8 @@ class PersonneController extends AbstractController
             // this condition is needed because the 'brochure' field is not required
             // so the PDF file must be processed only when a file is uploaded
             if ($photo) {
-                $originalFilename = pathinfo($photo->getClientOriginalName(), PATHINFO_FILENAME);
-                // this is needed to safely include the file name as part of the URL
-                $safeFilename = $slugger->slug($originalFilename);
-                $newFilename = $safeFilename.'-'.uniqid().'.'.$photo->guessExtension();
-
-                // Move the file to the directory where brochures are stored
-                try {
-                    $photo->move(
-                        $this->getParameter('personne_directory'),
-                        $newFilename
-                    );
-                } catch (FileException $e) {
-                    // ... handle exception if something happens during file upload
-                }
-
-                // updates the 'brochureFilename' property to store the PDF file name
-                // instead of its contents
-                $personne->setImage($newFilename);
+                $dierctory = $this->getParameter('personne_directory');
+                $personne->setImage($uploadedFile->uploadFile($photo, $dierctory));
             }
 
             $manager = $doctrine->getManager();
@@ -123,14 +132,16 @@ class PersonneController extends AbstractController
             if ($new) 
             {
                 $message = "la personne est ajouté avec succés";
+                            
             } 
             else 
             {
                 $message = "la personne est modifié avec succés";
             } 
-        
+            $mailMessage = $personne->getFirstname().' '.$personne->getName().' '.$message;
             
            $this->addFlash('success', $message);
+           $mailer->sendEmail(content: $mailMessage);
             return $this->redirectToRoute('personne.list');
         }
         else
