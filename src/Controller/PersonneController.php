@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use Monolog\Logger;
 use App\Entity\Personne;
+use App\Event\AddPersonneEvent;
 use App\Service\Helpers;
 use App\Form\PersonneType;
 use Psr\Log\LoggerInterface;
@@ -19,6 +20,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 // use Symfony\Component\HttpFoundation\File\UploadedFile;
 
@@ -28,8 +30,8 @@ use Symfony\Component\HttpFoundation\File\Exception\FileException;
 ]
 class PersonneController extends AbstractController
 {
-
-    public function __construct(private LoggerInterface $logger)
+    // private EventDispatcher $dispatcher
+    public function __construct(private LoggerInterface $logge)
     {
     }
 
@@ -147,6 +149,12 @@ class PersonneController extends AbstractController
             $manager->persist($personne);
 
             $manager->flush(); 
+
+            // if ($new) 
+            // {
+            //     $addPersonneEvent = new AddPersonneEvent($personne);
+            //     $this->dispatcher->dispatch($addPersonneEvent, AddPersonneEvent::ADD_PERSONNE_EVENT);
+            // } 
 
             $mailMessage = $personne->getFirstname().' '.$personne->getName().' '.$message;
             
